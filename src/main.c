@@ -29,14 +29,12 @@
 #define TIMER_INTERVAL (TIME_S(1))
 
 void uart_rx_handler(){
-    printf("cpu%d: %s\n",get_cpuid(), __func__);
+    printf("uart rx handler\n");
     uart_clear_rxirq();
 }
 
 void timer_handler(){
-    printf("cpu%d: %s\n", get_cpuid(), __func__);
-    timer_set(TIMER_INTERVAL);
-    irq_send_ipi(1ull << (get_cpuid() + 1));
+    printf("timer handler\n");
 }
 
 void main(void)
