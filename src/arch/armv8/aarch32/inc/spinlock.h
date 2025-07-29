@@ -12,7 +12,7 @@ typedef struct {
     uint32_t next;
 } spinlock_t;
 
-#define SPINLOCK_INITVAL ((spinlock_t){0,0})
+static const spinlock_t SPINLOCK_INITVAL = { 0, 0 };
 
 static inline void spinlock_init(spinlock_t* lock)
 {
@@ -35,21 +35,20 @@ static inline void spin_lock(spinlock_t* lock)
     __asm__ volatile(
         /* Get ticket */
         "1:\n\t"
-        "ldaex  %r0, %3\n\t"
-        "add    %r1, %r0, #1\n\t"
-        "strex  %r2, %r1, %3\n\t"
-        "cmp  %r2, #0\n\t"
+        "ldaex  %0, %3\n\t"
+        "add    %1, %0, #1\n\t"
+        "strex  %2, %1, %3\n\t"
+        "cmp  %2, #0\n\t"
         "bne 1b \n\t"
         /* Wait for your turn */
         "2:\n\t"
-        "ldr    %r1, %4\n\t"
-        "cmp    %r0, %r1\n\t"
+        "ldr    %1, %4\n\t"
+        "cmp    %0, %1\n\t"
         "beq   3f\n\t"
         "wfe \n\t"
         "b 2b\n\t"
-        "3:\n\t"
-        : "=&r"(ticket), "=&r"(next), "=&r"(temp)
-        : "Q"(lock->ticket), "Q"(lock->next) : "memory");
+        "3:\n\t" : "=&r"(ticket), "=&r"(next), "=&r"(temp) : "Q"(lock->ticket), "Q"(lock->next)
+        : "memory");
 }
 
 static inline void spin_unlock(spinlock_t* lock)
@@ -58,13 +57,11 @@ static inline void spin_unlock(spinlock_t* lock)
 
     __asm__ volatile(
         /* increment to next ticket */
-        "ldr    %r0, %1\n\t"
-        "add    %r0, %r0, #1\n\t"
-        "stl    %r0, %1\n\t"
+        "ldr    %0, %1\n\t"
+        "add    %0, %0, #1\n\t"
+        "stl    %0, %1\n\t"
         "dsb ish\n\t"
-        "sev\n\t"
-        : "=&r"(temp)
-        : "Q"(lock->next) : "memory");
+        "sev\n\t" : "=&r"(temp) : "Q"(lock->next) : "memory");
 }
 
 #endif /* __ARCH_SPINLOCK__ */

@@ -1,5 +1,5 @@
+#include <plat.h>
 #include <linflexd_uart.h>
-
 
 volatile struct linflexd *uart  =  (volatile struct linflexd *)PLAT_UART_ADDR;
 

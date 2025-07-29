@@ -1,36 +1,25 @@
 #ifndef PLAT_H
 #define PLAT_H
 
-/*	DRAM */
-// #define PLAT_MEM_BASE 0x317C0000
-// #define PLAT_MEM_SIZE 0x3E000
+#include <linflexd_uart.h>
 
-#define PLAT_MEM_BASE 0x32700000
-#define PLAT_MEM_SIZE 0x80000
+/* CRAM1 (1MiB)*/
+#define PLAT_MEM_BASE 0x32200000
+#define PLAT_MEM_SIZE 0xFFFFF
 
 #define PLAT_GENERIC_TIMER_CNTCTL_BASE (0x76200000)
 
 #define PLAT_GICD_BASE_ADDR (0x47800000)
 #define PLAT_GICR_BASE_ADDR (0x47900000)
 
-#define UART_IRQ_ID 244
+#define PLAT_UART_ADDR LINFLEXD_0_BASE
+#define UART_IRQ_ID 244	//LINFLEXD_0
 
-#endif
 
+#ifndef __ASSEMBLER__
 
-/*
-			Interrupts
+void plat_init(void);
 
-244	LINFlex_0	
-245	LINFlex_1	
-246	LINFlex_2	       
-247	LINFlex_3	       
-248	LINFlex_4	       
-249	LINFlex_5	      
-250	LINFlex_6	       
-251	LINFlex_7	        
-252	LINFlex_8	         
-253	LINFlex_9        
-254	LINFlex_10        
-255	LINFlex_11    
-*/
+#endif /* __ASSEMBLER__ */
+
+#endif /* PLAT_H */
