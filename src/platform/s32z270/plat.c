@@ -15,14 +15,14 @@ static void plat_clock(void)
     uint32_t reg_val;
 
     /* Configure clock source for console (FIRC_CLK)*/
-    mmio_write(MC_CGM_0_MUX_4_CSC, MC_CGM_0_MUX_4_CSC_SAFE);
+    mmio_write(MC_CGM_5_MUX_2_CSC, MC_CGM_5_MUX_2_CSC_SAFE);
 
     do {
-        reg_val = mmio_read(MC_CGM_0_MUX_4_CSS);
-    } while ((reg_val & MC_CGM_0_MUX_4_CSS_SWIP) != 0);
+        reg_val = mmio_read(MC_CGM_5_MUX_2_CSS);
+    } while ((reg_val & MC_CGM_5_MUX_2_CSS_SWIP) != 0);
 
     /* Enable divider */
-    mmio_write(MC_CGM_0_MUX_4_DC_0, MC_CGM_0_MUX_4_DC_0_DE);
+    mmio_write(MC_CGM_5_MUX_2_DC_0, MC_CGM_5_MUX_2_DC_0_DE);
 }
 
 static void plat_iomux(void)
@@ -32,7 +32,7 @@ static void plat_iomux(void)
 
     /* Configure SIUL2 settings for console (UART RX Pin) */
     mmio_write(SIUL2_MSCR_OFF(UART_RX_PIN), SIUL2_MSCR_RX);
-    mmio_write(SIUL2_IMCR_OFF(47), SIUL2_IMCR_RX);
+    mmio_write(SIUL2_IMCR_OFF(466), SIUL2_IMCR_RX);
 }
 
 void plat_init(void)
