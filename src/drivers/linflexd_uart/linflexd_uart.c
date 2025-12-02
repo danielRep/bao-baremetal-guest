@@ -16,7 +16,7 @@ static void uart_set_baudrate(volatile struct linflexd* uart)
     uint32_t ibr;
 
     /* Compute the value for the integer baudrate */
-    ibr = LINFLEXD_9_CLKFREQ / (UART_BAUDRATE * LINFLEXD_9_DFLT_OSR);
+    ibr = LINFLEXD_0_CLKFREQ / (UART_BAUDRATE * LINFLEXD_0_DFLT_OSR);
 
     /* Write the computed ibr */
     uart->linibrr = ibr;

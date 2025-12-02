@@ -9,18 +9,21 @@
 #define LINFLEXD_9_TX_PIN         150U
 #define LINFLEXD_9_RX_PIN         151U
 
-#define UART_TX_PIN               (LINFLEXD_9_TX_PIN)
-#define UART_RX_PIN               (LINFLEXD_9_RX_PIN)
+#define LINFLEXD_0_TX_PIN         0U
+#define LINFLEXD_0_RX_PIN         1U
 
-#define LINFLEXD_9_BASE           (0x42980000UL)
+#define UART_TX_PIN               (LINFLEXD_0_TX_PIN)
+#define UART_RX_PIN               (LINFLEXD_0_RX_PIN)
+
+#define LINFLEXD_0_BASE           (0x40170000UL)
 
 #define LINFLEXD_LINCR1_INIT      (1UL << 0UL)
 #define LINFLEXD_LINCR1_SLEEP     (1UL << 1UL)
 
 #define UART_BAUDRATE             (115200U)
 
-#define LINFLEXD_9_CLKFREQ        (48000000UL)
-#define LINFLEXD_9_DFLT_OSR       (16UL)
+#define LINFLEXD_0_CLKFREQ        (48000000UL)
+#define LINFLEXD_0_DFLT_OSR       (16UL)
 
 #define LINFLEXD_UARTCR_UART      (1UL << 0UL)
 #define LINFLEXD_UARTCR_WL0       (1UL << 1UL)

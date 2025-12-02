@@ -38,7 +38,7 @@ static void plat_iomux(void)
 void plat_init(void)
 {
     if(cpu_is_master()){
-        plat_clock();
-        plat_iomux();
+        //plat_clock();
+        //plat_iomux();
     }
 }
