@@ -111,7 +111,7 @@ entry_el1:
     dsb
     isb
 
-    ldr r1, =(SCTLR_RES1 | SCTLR_C | SCTLR_I | SCTLR_BR | SCTLR_M)
+    ldr r1, =(SCTLR_RES1 | SCTLR_C | SCTLR_I | SCTLR_BR   | SCTLR_M)
     mcr p15, 0, r1, c1, c0, 0 // sctlr
 
 #else 

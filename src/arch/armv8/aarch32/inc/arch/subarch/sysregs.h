@@ -48,7 +48,7 @@
     static inline unsigned long long sysreg_##reg##_read() {\
         unsigned long long _temp, _tempH;\
         asm volatile("mrrc p15, "#op1", %0, %1, "#crm"\n\r": "=r"(_temp), "=r"(_tempH));\
-        return ((_tempH << 32) | _temp);\
+        return ((_tempH << 32) | (unsigned long) _temp);\
     } \
     static inline void sysreg_##reg##_write(unsigned long long val) {\
         unsigned long long _tempH = (val>>32);\
@@ -81,6 +81,7 @@ SYSREG_GEN_ACCESSORS(mpidr_el1, 0, c0, c0, 5);
 SYSREG_GEN_ACCESSORS(sctlr_el1, 0, c1, c0, 0); 
 SYSREG_GEN_ACCESSORS(cntkctl_el1, 0, c14, c1, 0);
 SYSREG_GEN_ACCESSORS(pmcr_el0, 0, c9, c12, 0);
+SYSREG_GEN_ACCESSORS(pmccfiltr_el0, 0, c14, c15, 7);
 SYSREG_GEN_ACCESSORS_64(par_el1, 0, c7);
 SYSREG_GEN_ACCESSORS(tcr_el1, 4, c2, c0, 2);
 SYSREG_GEN_ACCESSORS_64(ttbr0_el1, 4, c2);
@@ -111,6 +112,14 @@ SYSREG_GEN_ACCESSORS(icc_igrpen1_el1, 0, c12, c12, 7);
 SYSREG_GEN_ACCESSORS_64(icc_sgi1r_el1, 0, c12);
 
 SYSREG_GEN_ACCESSORS(dccivac, 0, c7, c14, 1);
+
+SYSREG_GEN_ACCESSORS(pmselr_el0, 0, c9, c12, 5);
+SYSREG_GEN_ACCESSORS(pmxevcntr_el0, 0, c9, c13, 2);
+SYSREG_GEN_ACCESSORS(pmxevtyper_el0, 0, c9, c13, 1);
+SYSREG_GEN_ACCESSORS(pmcntenset_el0, 0, c9, c12, 1);
+SYSREG_GEN_ACCESSORS(pmccntr_el0, 0, c9, c13, 0);
+SYSREG_GEN_ACCESSORS(pmcntenclr_el0, 0, c9, c12, 2);
+
 static inline void arm_dc_civac(uintptr_t cache_addr) {
     sysreg_dccivac_write(cache_addr);
 }

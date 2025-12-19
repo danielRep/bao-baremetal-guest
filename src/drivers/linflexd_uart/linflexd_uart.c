@@ -16,7 +16,7 @@ static void uart_set_baudrate(volatile struct linflexd* uart)
     uint32_t ibr;
 
     /* Compute the value for the integer baudrate */
-    ibr = LINFLEXD_0_CLKFREQ / (UART_BAUDRATE * LINFLEXD_0_DFLT_OSR);
+    ibr = LINFLEXD_CLKFREQ / (UART_BAUDRATE * LINFLEXD_DFLT_OSR);
 
     /* Write the computed ibr */
     uart->linibrr = ibr;
@@ -57,13 +57,16 @@ void linflexd_uart_clear_rxirq(volatile struct linflexd * uart)
 {
     /* Clear the receive buffer full flag */
     //uart->uartsr |= LINFLEXD_UARTSR_DRFRFE;
+    uart->uartsr = LINFLEXD_UARTSR_RMB;
 }
 
 uint8_t linflexd_uart_getc(volatile struct linflexd * uart){
 
     uint8_t data = 0;
 
-    while(!(uart->uartsr & ~LINFLEXD_UARTSR_RMB));
+    while ((uart->uartsr & LINFLEXD_UARTSR_RMB) == 0u) {
+    /* wait for receive buffer full */
+    }
 
     data = uart->bdrm & (0xFF);
 

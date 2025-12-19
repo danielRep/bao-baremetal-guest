@@ -1,5 +1,5 @@
-/** 
- * Bao, a Lightweight Static Partitioning Hypervisor 
+/**
+ * Bao, a Lightweight Static Partitioning Hypervisor
  *
  * Copyright (c) Bao Project (www.bao-project.org), 2019-
  *
@@ -10,7 +10,7 @@
  * Bao is free software; you can redistribute it and/or modify it under the
  * terms of the GNU General Public License version 2 as published by the Free
  * Software Foundation, with a special exception exempting guest code from such
- * license. See the COPYING file in the top-level directory for details. 
+ * license. See the COPYING file in the top-level directory for details.
  *
  */
 
@@ -19,63 +19,93 @@
 #include <stdio.h>
 #include <cpu.h>
 #include <wfi.h>
-#include <spinlock.h>
-#include <plat.h>
-#include <irq.h>
-#include <uart.h>
 #include <timer.h>
+#include <uart.h>
+#include <pmu.h>
+#include <inttypes.h>
 
-#define TIMER_INTERVAL (TIME_S(1))
+#define COL_SIZE        20
+#define SAMPLE_FORMAT   "%" XSTR(COL_SIZE) "llu"
+#define HEADER_FORMAT   "%" XSTR(COL_SIZE) "s"
 
-spinlock_t print_lock = SPINLOCK_INITVAL;
+#define NUM_WARMUPS     10
+#define NUM_SAMPLES  (NUM_WARMUPS + 990)
 
-void uart_rx_handler(){
-    printf("cpu%d: %s\n",get_cpuid(), __func__);
-    uart_clear_rxirq();
+uint64_t samples[NUM_SAMPLES];
+uint64_t pmu_samples[NUM_SAMPLES];
+
+#define SMCC64_BIT              (0x40000000)
+#define SMCC32_FID_VND_HYP_SRVC (0x86000000)
+#define SMCC64_FID_VND_HYP_SRVC (SMCC32_FID_VND_HYP_SRVC | SMCC64_BIT)
+
+#define BAO_YIELD_HYPCALL_ID  3
+
+ void yield() {
+    const uint32_t fid = SMCC64_FID_VND_HYP_SRVC | BAO_YIELD_HYPCALL_ID;
+    asm volatile(
+        "mov r0, %0\n"
+        "hvc #0x0EA1\n"
+        :
+        : "r"(fid)
+        : "r0", "memory", "cc");
 }
 
-void ipi_handler(){
-    printf("cpu%d: %s\n", get_cpuid(), __func__);
-    irq_send_ipi(1ull << (get_cpuid() + 1));
-}
-
-void timer_handler(){
-    printf("cpu%d: %s\n", get_cpuid(), __func__);
-    timer_set(TIMER_INTERVAL);
-    irq_send_ipi(1ull << (get_cpuid() + 1));
-}
+volatile struct {
+    uint64_t context_switch_end_cnt;
+    uint64_t context_switch_end_pmu;
+} *shared_mem = (void*)0x32400000;
 
 void main(void){
 
-    static volatile bool master_done = false;
+    printf("Bao bare-metal context-switch test\n");
+    yield(); // allow other guest to get to the loop
 
-    if(cpu_is_master()){
-        spin_lock(&print_lock);
-        printf("Bao bare-metal test guest\n");
-        spin_unlock(&print_lock);
+    while(1) {
+        printf("Press 's' to start...\n");
+        while(uart_getchar() != 's');
 
-        irq_set_handler(UART_IRQ_ID, uart_rx_handler);
-        irq_set_handler(TIMER_IRQ_ID, timer_handler);
-        irq_set_handler(IPI_IRQ_ID, ipi_handler);
+        size_t i = 0;
 
-        uart_enable_rxirq();
+        printf("timer pmu\n");
 
-        timer_set(TIMER_INTERVAL);
-        irq_enable(TIMER_IRQ_ID);
-        irq_set_prio(TIMER_IRQ_ID, IRQ_MAX_PRIO);
+        while(i < NUM_SAMPLES) {
+            pmu_reset();
+            pmu_start();
+            pmu_cycle_enable(true);
 
-        master_done = true;
+            uint64_t context_switch_start_cnt = timer_get();
+            uint64_t context_switch_start_pmu = pmu_cycle_get();
+
+            yield();
+
+            samples[i] = shared_mem->context_switch_end_cnt  - context_switch_start_cnt;
+            pmu_samples[i] = shared_mem->context_switch_end_pmu  - context_switch_start_pmu;
+
+            printf("%llu %llu\n", samples[i], pmu_samples[i]);
+            i++;
+        }
+
+        // pmu_reset();
+        // pmu_start();
+        // pmu_cycle_enable(true);
+        // const uint64_t target_cycles = 10*1000000000ULL;
+        // while(1){
+        //     uint64_t acc = 0;
+        //     uint32_t prev = pmu_cycle_get();
+            
+        //     printf("Tstamp1\n");
+        //     while (acc < target_cycles) {
+        //         uint32_t now = pmu_cycle_get();
+        //         acc += (uint32_t)(now - prev);   // unsigned subtraction handles wrap
+        //         prev = now;
+        //     }
+        //     printf("Tstamp2\n");
+        // }
+
+        //check timer freq is correct. loop for a 1 mnt (freq=8MHz)
+        // uint64_t start = pmu_cycle_get();
+        // while((pmu_cycle_get() - start) < 480000000ull);
+        // printf("time stamp\n");
+        // pmu_reset();
     }
-
-    irq_enable(UART_IRQ_ID);
-    irq_set_prio(UART_IRQ_ID, IRQ_MAX_PRIO);
-    irq_enable(IPI_IRQ_ID);
-    irq_set_prio(IPI_IRQ_ID, IRQ_MAX_PRIO);
-
-    while(!master_done);
-    spin_lock(&print_lock);
-    printf("cpu %d up\n", get_cpuid());
-    spin_unlock(&print_lock);
-
-    while(1) wfi();
 }

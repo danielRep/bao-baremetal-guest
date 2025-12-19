@@ -4,8 +4,8 @@
 #include <linflexd_uart.h>
 
 /* CRAM1 (1MiB)*/
-#define PLAT_MEM_BASE 0x32200000
-#define PLAT_MEM_SIZE 0xFFFFF
+#define PLAT_MEM_BASE 0x32300000
+#define PLAT_MEM_SIZE 0x100000
 
 #define PLAT_GENERIC_TIMER_CNTCTL_BASE (0x76200000)
 
