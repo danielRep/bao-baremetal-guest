@@ -19,63 +19,46 @@
 #include <stdio.h>
 #include <cpu.h>
 #include <wfi.h>
-#include <spinlock.h>
-#include <plat.h>
-#include <irq.h>
-#include <uart.h>
 #include <timer.h>
+#include <pmu.h>
 
-#define TIMER_INTERVAL (TIME_S(1))
+#define SMCC64_BIT              (0x40000000)
+#define SMCC32_FID_VND_HYP_SRVC (0x86000000)
+#define SMCC64_FID_VND_HYP_SRVC (SMCC32_FID_VND_HYP_SRVC | SMCC64_BIT)
 
-spinlock_t print_lock = SPINLOCK_INITVAL;
+#define BAO_YIELD_HYPCALL_ID  3
 
-void uart_rx_handler(){
-    printf("cpu%d: %s\n",get_cpuid(), __func__);
-    uart_clear_rxirq();
+void yield() {
+    const uint32_t fid = SMCC64_FID_VND_HYP_SRVC | BAO_YIELD_HYPCALL_ID;
+    asm volatile(
+        "mov r0, %0\n"
+        "hvc #0x0EA1\n"
+        :
+        : "r"(fid)
+        : "r0", "memory", "cc");
 }
 
-void ipi_handler(){
-    printf("cpu%d: %s\n", get_cpuid(), __func__);
-    irq_send_ipi(1ull << (get_cpuid() + 1));
-}
-
-void timer_handler(){
-    printf("cpu%d: %s\n", get_cpuid(), __func__);
-    timer_set(TIMER_INTERVAL);
-    irq_send_ipi(1ull << (get_cpuid() + 1));
-}
+volatile struct {
+    uint64_t context_switch_end_cnt;
+    uint64_t context_switch_end_pmu;
+} *shared_mem = (void*)0x32400000;
 
 void main(void){
 
-    static volatile bool master_done = false;
+    printf("Bao bare-metal context-switch test guest 1 -- test\n");
 
-    if(cpu_is_master()){
-        spin_lock(&print_lock);
-        printf("Bao bare-metal test guest\n");
-        spin_unlock(&print_lock);
+    while(true) {
 
-        irq_set_handler(UART_IRQ_ID, uart_rx_handler);
-        irq_set_handler(TIMER_IRQ_ID, timer_handler);
-        irq_set_handler(IPI_IRQ_ID, ipi_handler);
+        // while(1){
+        //     //check timer freq is correct. loop for a 1 mnt (freq=8MHz)
+        //     uint64_t start = timer_get();
+        //     while((timer_get() - start) < 480000000);
+        //     printf("time stamp\n");
+        // }
 
-        uart_enable_rxirq();
-
-        timer_set(TIMER_INTERVAL);
-        irq_enable(TIMER_IRQ_ID);
-        irq_set_prio(TIMER_IRQ_ID, IRQ_MAX_PRIO);
-
-        master_done = true;
+        yield();
+        shared_mem->context_switch_end_cnt = (uint64_t)timer_get();
+        shared_mem->context_switch_end_pmu = (uint64_t)pmu_cycle_get();
+        // printf("[baremetal1] woke up! yielding..\n");
     }
-
-    irq_enable(UART_IRQ_ID);
-    irq_set_prio(UART_IRQ_ID, IRQ_MAX_PRIO);
-    irq_enable(IPI_IRQ_ID);
-    irq_set_prio(IPI_IRQ_ID, IRQ_MAX_PRIO);
-
-    while(!master_done);
-    spin_lock(&print_lock);
-    printf("cpu %d up\n", get_cpuid());
-    spin_unlock(&print_lock);
-
-    while(1) wfi();
 }
